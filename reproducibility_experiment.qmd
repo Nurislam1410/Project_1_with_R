@@ -1,0 +1,68 @@
+---
+title: "Reproducibility Experiment"
+subtitle: "Rerunning Standard Normal with a different seed"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r}
+#| label: setup
+source("clt_functions.R")
+```
+
+## What this experiment checks
+
+<!-- This is a required, separate check from the 5 analysis files: rerun one
+     analysis with a DIFFERENT seed and compare the exact numbers and the
+     scientific conclusion. -->
+
+The Standard Normal analysis is being carried out again, this time with n taken as 1, 5, and 1000 and B set at 10,000, but using a new seed value of 4242 rather than the original 7828, in order to determine whether my results and conclusions are reproducible or whether they were merely due to the particular seed that was used the first time.
+
+```{r}
+#| label: original-seed
+set.seed(7828)
+normal_n1_original    <- simulate_means(rnorm, n = 1,    B = 10000)
+set.seed(7828)
+normal_n5_original    <- simulate_means(rnorm, n = 5,    B = 10000)
+set.seed(7828)
+normal_n1000_original <- simulate_means(rnorm, n = 1000, B = 10000)
+
+original_results <- rbind(
+  summarize_means(normal_n1_original,    mu = 0, sigma = 1, n = 1),
+  summarize_means(normal_n5_original,    mu = 0, sigma = 1, n = 5),
+  summarize_means(normal_n1000_original, mu = 0, sigma = 1, n = 1000)
+)
+round(original_results, 4)
+```
+
+```{r}
+#| label: new-seed
+set.seed(4242)
+normal_n1_new    <- simulate_means(rnorm, n = 1,    B = 10000)
+set.seed(4242)
+normal_n5_new    <- simulate_means(rnorm, n = 5,    B = 10000)
+set.seed(4242)
+normal_n1000_new <- simulate_means(rnorm, n = 1000, B = 10000)
+
+new_results <- rbind(
+  summarize_means(normal_n1_new,    mu = 0, sigma = 1, n = 1),
+  summarize_means(normal_n5_new,    mu = 0, sigma = 1, n = 5),
+  summarize_means(normal_n1000_new, mu = 0, sigma = 1, n = 1000)
+)
+round(new_results, 4)
+```
+
+## Did the exact numbers change?
+
+Certainly, each of the numbers varied when the two seeds were different, since a different seed leads to different random draws. For instance, at n=1 the Shapiro-Wilk p-value was 0.0171 when seed 7828 was used but 0.8941 when seed 4242 was used, which gave a completely different result. At n=1000 the situation was the reverse: it was 0.3174 with seed 7828, not significant, whereas it was 0.0222 with seed 4242, which was significant. Therefore, the particular value of n at which a Shapiro-Wilk rejection occurs changes according to the seed, occurring at n=1 with one seed and at n=1000 with the other. The skewness and kurtosis values also differ slightly between the two runs, for example, at n=1 the skewness was 0.0264 with seed 7828 compared to 0.0318 with seed 4242, although in both cases the values remain small.
+
+## Did the scientific conclusion change?
+
+Not at all. Even if the individual figures varied and even if a different value of n was indicated by the Shapiro-Wilk test each time, all the other diagnostic measures—skewness close to zero, excess kurtosis close to zero, the standard deviation of the means nearly equal to the theoretical standard error, a bell-shaped histogram, and a straight Q-Q plot—remained the same for both seeds at every n, including when n was 1. My conclusion that the sample means of the standard normal distribution are approximately normal from n = 1 does not alter when a new seed is used.
+
+## What does this say about Monte Carlo simulation and reproducibility?
+
+This proves that a single Monte Carlo run can only be considered reproducible in the sense that the same seed always produces the identical numbers, but the numbers themselves are not the real result; they are merely one random instance of what might have occurred. What should be reproducible and what actually was reproducible in this case is the general conclusion derived from a number of different diagnostic tests, not any individual figure such as a single p-value. It is also a second, independent example of the Shapiro-Wilk test's oversensitivity: with seed 7828 it rejected the data at n=1, while with seed 4242 it rejected the data at n=1000, the same genuinely normal data being flagged at different sample sizes simply due to random noise, which is precisely the reason why I have never allowed that one test to override all the other evidence.
