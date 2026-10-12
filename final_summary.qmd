@@ -1,0 +1,37 @@
+---
+title: "Final Summary: How Fast Does Normal Happen?"
+subtitle: "Project 1 - Cross-Distribution Comparison"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+## Comparison table
+
+| Population | Smallest n judged normal | Skewness at that n | Excess kurtosis at that n | Key observation |
+|---|---|---|---|---|
+| Standard Normal | 1 | 0.0264 | 0.0586 | Already normal by construction -- no averaging needed at all. |
+| Six-Sided Die | 10 | 0.0128 | -0.0625 | Symmetric (no skew issue), but discreteness delayed convergence until kurtosis settled. |
+| Exponential (rate=1) | 300 | 0.0922 | -0.0321 | Skew-driven -- kurtosis settled by n=50, but skewness stayed above threshold 10x past the "n=30" rule. |
+| Binomial Small (size=5, p=0.10) | 150 | 0.0970 | -0.0323 | Also skew-driven, same pattern as Exponential but reached the threshold sooner. |
+| Cauchy (standard) | Never (no finite n) | Unstable at every n (tens to ~95) | Unstable at every n (thousands) | Population mean/variance undefined -- the CLT's own precondition fails, so no n fixes it. |
+
+If you consider the table as a whole, the smallest value of n that is adequate to be classified as normal differs greatly among the five populations, ranging from n=1 in the case of the Standard Normal all the way to n=300 for the Exponential, while the Cauchy distribution never reaches this point no matter how large n is. This wide variation alone is already evidence that there cannot be a single rule which applies to all the populations, even before looking at the answers given below.
+
+## Is there a universal "n = 30" rule?
+
+Not at all—my results directly contradict a single universal rule. Both the Standard Normal and the Die reached my normality criterion well before n=30, doing so at n=1 and n=10. In contrast, the Exponential required n=300, which is ten times the rule of thumb, and the Binomial Small needed n=150, five times the rule of thumb. The two slower populations are skewed, while the two faster ones are symmetric. Therefore, the idea that n=30 is sufficient only applies to the two populations which in fact did not need averaging at all, and for the skewed populations n=30 greatly underestimated the actual amount of n that was required.
+
+## Which populations converged fastest / slowest, and why?
+
+The Standard Normal distribution was the fastest, taking only an instant, since the population is already normally distributed, while the Die with n=10 was also quick, being symmetric and free from skew, although a bit of averaging was required to eliminate its discreteness. The Exponential distribution with n=300 and the Binomial Small distribution with n=150 were the slowest, as both involved skewed populations and it was the skewness rather than the kurtosis that acted as the limiting factor, since in both cases kurtosis reached zero much earlier than skewness did. The Cauchy distribution is in a completely separate category because it never converges, since both the slow and fast methods assume that convergence will eventually take place, whereas for Cauchy this does not happen, there being no point in approaching it since the population mean and variance do not exist.
+
+## What happened under heavy tails (Cauchy)?
+
+Cauchy demonstrated that the Central Limit Theorem does not apply automatically since it requires both a finite population mean and a finite population variance, and when this condition is not met, no amount of averaging can remedy the situation. For values of n ranging from 1 to 5000, the spread of the sample means did not decrease in the manner predicted by the CLT, being actually greatest at n=100 rather than at n=1; the average of the sample means never came close to any one particular value, and the Shapiro-Wilk test overwhelmingly rejected the idea that the data were normally distributed at every n. This is a fundamental difference, not merely one of degree, from the case of slowly converging skewed distributions; it is not that a larger n is needed in this instance, it is that no value of n will work.
+
+## Reproducibility note
+
+When the Standard Normal distribution was rerun using a different seed, 4242 rather than 7828, each individual number changed and indeed the particular value of n that was flagged by the Shapiro-Wilk test switched as well—being n=1 with the first seed and n=1000 with the second. However, the general conclusion that the Standard Normal appears to be normal from n=1 remained the same. This reinforced throughout the project the idea that no single diagnostic figure, particularly a single p-value, should ever be trusted on its own and that the conclusion must be based on several diagnostics all agreeing.
