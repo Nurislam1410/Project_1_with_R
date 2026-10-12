@@ -1,0 +1,180 @@
+---
+title: "CLT Simulation: POPULATION NAME"
+author: "Your Name"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+<!--
+HOW TO USE THIS TEMPLATE
+1. Save a copy for each population (e.g. clt_gamma.qmd).
+2. Change the title above.
+3. Change ONLY the values in the "settings" chunk below.
+4. Run it, look at the results, then fill in final_n and the text sections.
+Everything else updates itself from the settings.
+-->
+
+```{r}
+#| label: settings
+#| echo: true
+
+# ---- CHANGE THESE FOR EACH POPULATION ----------------------
+
+pop_name <- "Exponential (rate = 1)"      # name used in the text
+
+# Random generator: a function that takes n and returns n draws.
+# Put any extra settings (rate, shape, mean, ...) inside it.
+rng <- function(n) rexp(n, rate = 1)
+
+pop_mean <- 1                             # true population mean
+pop_sd   <- 1                             # true population standard deviation
+
+sample_sizes <- c(2, 5, 10, 30, 50, 100)  # sample sizes to test
+B        <- 10000                         # repeats per sample size
+seed     <- 2026                          # seed reused for every n
+
+final_n  <- NA                            # fill in after looking at results
+
+# ------------------------------------------------------------
+```
+
+```{r}
+#| label: load-functions
+#| echo: true
+
+# Load simulate_means(), summarize_means() and plot_means()
+source("clt_functions.R")
+```
+
+## What population
+
+<!--
+Describe the population: its name, its formula or parameters,
+its true mean and standard deviation, and its shape
+(symmetric? skewed? heavy tails?). A plot of the population
+itself can help here.
+-->
+
+The population studied here is **`r pop_name`**, with true mean
+`r pop_mean` and true standard deviation `r round(pop_sd, 4)`.
+
+WRITE HERE.
+
+## What I expected
+
+<!--
+Before running anything: how quickly did you think the sample
+means would become normal, and why? Mention the shape of the
+population (skew, tails) as your reason.
+-->
+
+WRITE HERE.
+
+## Which sample sizes and why
+
+<!--
+Explain why you picked these sample sizes, e.g. a few very small
+ones to see the non-normal behaviour, the common "n = 30" rule
+of thumb, and larger ones to confirm.
+-->
+
+The sample sizes tested were n = `r paste(sample_sizes, collapse = ", ")`,
+each with B = `r format(B, big.mark = ",")` repeats.
+
+WRITE HERE.
+
+```{r}
+#| label: simulate
+#| echo: true
+
+# Empty list to keep the sample means for each n (used for plots)
+all_means <- list()
+
+# Empty list to keep one summary row for each n
+summary_rows <- list()
+
+for (i in seq_along(sample_sizes)) {
+  n <- sample_sizes[i]                    # current sample size
+
+  set.seed(seed)                          # reset the seed for this n
+
+  m <- simulate_means(rng, n = n, B = B)  # B sample means of size n
+
+  all_means[[i]] <- m                     # save the means
+  summary_rows[[i]] <- summarize_means(m, mu = pop_mean,
+                                       sigma = pop_sd, n = n)
+}
+```
+
+```{r}
+#| label: results-table
+#| echo: true
+
+# Stack the one-row summaries into one table
+results <- do.call(rbind, summary_rows)
+
+# Round to 4 decimal places so the table is easy to read
+shown <- round(results, 4)
+
+# Keep 3 significant figures for the p-value instead, so very
+# small p-values show as e.g. 2.5e-13 rather than 0
+shown$shapiro_p <- signif(results$shapiro_p, 3)
+
+print(shown, row.names = FALSE)
+```
+
+```{r}
+#| label: plots
+#| echo: true
+#| fig-width: 9
+#| fig-height: 4
+
+# One histogram + Q-Q plot pair for each sample size
+for (i in seq_along(sample_sizes)) {
+  plot_means(all_means[[i]], mu = pop_mean, sigma = pop_sd,
+             n = sample_sizes[i],
+             main = paste0(pop_name, ", n = ", sample_sizes[i]))
+}
+```
+
+## When it became normal
+
+<!--
+Use the table and plots to say at which sample size the
+distribution of sample means looked normal. Refer to skewness,
+excess kurtosis, the Shapiro-Wilk p-value, the histogram and
+the Q-Q plot. Then set final_n in the settings chunk so the
+box below shows your answer.
+-->
+
+WRITE HERE.
+
+::: {.callout-important}
+## Final answer
+For the **`r pop_name`** population, the sample means look
+approximately normal from **n = `r final_n`**.
+:::
+
+## Why I chose that value
+
+<!--
+Justify the answer: which numbers crossed which thresholds
+(e.g. |skewness| below 0.1?), what the Q-Q plot looked like,
+and why a smaller n was not good enough. If Shapiro-Wilk still
+rejects at that n, explain why (with 5000 values it detects
+very small departures from normality).
+-->
+
+WRITE HERE.
+
+## What surprised me
+
+<!--
+Compare the results to what you expected. Was it faster or
+slower than predicted? Did the SD of the means match
+sigma / sqrt(n)? Anything odd in the plots?
+-->
+
+WRITE HERE.

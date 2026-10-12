@@ -1,0 +1,99 @@
+---
+title: "CLT Investigation: Standard Normal"
+subtitle: "Project 1 - How Fast Does Normal Happen?"
+format:
+  html:
+    toc: true
+    code-fold: false
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+source("clt_functions.R")
+```
+
+## 1. What population are you sampling from?
+
+<!-- Describe the Standard Normal population: its shape, theoretical mean (mu) and
+     standard deviation (sigma), in your own words. -->
+It is bell-shaped that has a theoretical mean (mu) as 0 and standard deviation (sigma) as 1.
+
+## 2. What did you expect before running the simulation?
+
+<!-- Your prediction, made BEFORE looking at results. What did you expect to happen
+     as n increased, and why, based on what you know about this population's shape? -->
+The prediction was that all results will be evidence towards normality of the distribution, because I tested population which is Standard Normal in core.
+
+## 3. Which sample sizes did you investigate, and why?
+
+<!-- Explain your choice of n = 1, 5, 1000 -- why these specific values made sense
+     for THIS population, given what's special about it. -->
+
+For this population I used n=1, n=5, and n=1000 in order to cover the entire range. The case of n=1 is an extreme one: when no averaging is being done, I am able to show that the sampling distribution is the same as the population itself. n=5 represents a small and realistic sample size, while n=1000 is large enough to confirm that the result remains valid well beyond any sensible sample size. Unlike with the other populations I am going to examine, I did not need to look for a "transition point" since the Standard Normal distribution has none -- instead, these three values demonstrate the point directly rather than approaching it through a boundary.
+
+```{r}
+#| label: run-simulations
+set.seed(7828)
+normal_means_n1 <- simulate_means(rnorm, n = 1, B = 10000)
+summarize_means(normal_means_n1, mu = 0, sigma = 1, n = 1)
+
+set.seed(7828)
+normal_means_n5 <- simulate_means(rnorm, n = 5, B = 10000)
+summarize_means(normal_means_n5, mu = 0, sigma = 1, n = 5)
+
+set.seed(7828)
+normal_means_n1000 <- simulate_means(rnorm, n = 1000, B = 10000)
+summarize_means(normal_means_n1000, mu = 0, sigma = 1, n = 1000)
+```
+
+```{r}
+#| label: table
+results <- rbind(
+  summarize_means(normal_means_n1, mu = 0, sigma = 1, n = 1),
+  summarize_means(normal_means_n5, mu = 0, sigma = 1, n = 5),
+  summarize_means(normal_means_n1000, mu = 0, sigma = 1, n = 1000)
+)
+round(results, 4)
+```
+
+```{r}
+#| label: plots-n1
+plot_means(normal_means_n1, mu = 0, sigma = 1, n = 1, main = "Standard Normal, n = 1")
+```
+
+```{r}
+#| label: plots-n5
+plot_means(normal_means_n5, mu = 0, sigma = 1, n = 5, main = "Standard Normal, n = 5")
+```
+
+```{r}
+#| label: plots-n1000
+plot_means(normal_means_n1000, mu = 0, sigma = 1, n = 1000, main = "Standard Normal, n = 1000")
+```
+
+## 4. When did the sampling distribution become approximately normal?
+
+<!-- Your "normal enough" criterion applied to this data. Final boxed answer below. -->
+
+The standard I use for saying that a distribution is "normal enough" is that the skewness and excess kurtosis are near zero (within about ±0.1), that the histogram appears to be bell-shaped, that the points on the Q-Q plot lie on the line, and that the SD obtained from simulation agrees with the theoretical SE. I do not consider Shapiro-Wilk's p-value on its own as being sufficient to exclude a distribution, since it is known to tend to reject too often when the sample size is large. According to this criterion, all three of the n values that I have tested satisfy the condition.
+
+$$\boxed{n = 1}$$
+
+## 5. Why did you choose that value?
+
+<!-- Defend your answer using the histogram, Q-Q plot, and numerical evidence above.
+     Also address the Shapiro-Wilk contradiction at n=1 (W close to 1, but p < 0.05) --
+     explain why you did or didn't let that p-value change your conclusion. -->
+
+When n is 1, the skewness (0.026) and kurtosis (0.059) are both close to zero, the histogram has a bell shape, and the Q-Q plot lies along the reference line. The only warning is that Shapiro-Wilk's p-value is 0.017, which means normality is rejected at the 0.05 level. Nevertheless, I do not allow this single result to override the other evidence: this data consists of 10,000 direct draws from a true Standard Normal distribution and so must be normal. The rejection is a known effect due to the test's sensitivity when the sample size is large (this has been verified by reference to my earlier run with n=5, where the same test yielded a p-value of 0.11 for equally normal data). Since the other four diagnostic measures are in agreement with one another and with theory, I place more trust in them than in this one overly sensitive p-value.
+
+## 6. What surprised you?
+
+<!-- At least one thing from the actual simulation you didn't expect. -->
+
+I had expected the Shapiro-Wilk test to agree with the other diagnostic tests at every value of n, but at n=1 it rejected the idea that the data was normal even though the data is by definition pure Standard Normal. The fact that the p-value alternated between significant and not significant (0.017 at n=1, 0.11 at n=5, 0.32 at n=1000) for data that is equally normal in all cases provided a clear example of a test that is oversensitive rather than one that is based on wrong data.
