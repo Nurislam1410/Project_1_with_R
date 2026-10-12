@@ -1,0 +1,103 @@
+---
+title: "CLT Simulation: Binomial Small (n=5, p=0.10)"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r}
+#| label: settings
+#| echo: true
+
+pop_name <- "Binomial (size = 5, prob = 0.10)"
+
+rng <- function(n) rbinom(n, size = 5, prob = 0.10)
+
+pop_mean <- 0.5
+pop_sd   <- sqrt(5 * 0.10 * 0.90)
+
+sample_sizes <- c(2, 5, 10, 30, 50, 100, 150, 200, 300)
+B        <- 10000
+seed     <- 7828
+
+final_n  <- 150
+```
+
+```{r}
+#| label: load-functions
+#| echo: true
+source("clt_functions.R")
+```
+
+## What population
+
+The population studied here is **`r pop_name`**, with true mean
+`r pop_mean` and true standard deviation `r round(pop_sd, 4)`.
+
+Each single draw from this population is the number of successes in 5 independent trials, each with success probability 0.10. Because p is small, far from 0.5, and the number of trials is small, a single draw is strongly right-skewed: most draws are 0 or 1, and higher counts, up to the maximum of 5, are increasingly rare.
+
+## What I expected
+
+I had the same expectation as with Exponential regarding this population's skew, namely that convergence to normality would be slower than in the symmetric cases of Standard Normal and die, and that it would require considerably more than n=30 since p is so small at 0.10.
+
+## Which sample sizes and why
+
+The sample sizes tested were n = `r paste(sample_sizes, collapse = ", ")`,
+each with B = `r format(B, big.mark = ",")` repeats.
+
+The same reasoning applies as in the case of the exponential distribution: start with small values of n in order to clearly see the skewed shape, use n=30 to check the rule of thumb, and then go further to n=50 through n=300 since the skewness was still above the threshold at both n=30 and n=100.
+
+```{r}
+#| label: simulate
+#| echo: true
+all_means <- list()
+summary_rows <- list()
+for (i in seq_along(sample_sizes)) {
+  n <- sample_sizes[i]
+  set.seed(seed)
+  m <- simulate_means(rng, n = n, B = B)
+  all_means[[i]] <- m
+  summary_rows[[i]] <- summarize_means(m, mu = pop_mean, sigma = pop_sd, n = n)
+}
+```
+
+```{r}
+#| label: results-table
+#| echo: true
+results <- do.call(rbind, summary_rows)
+shown <- round(results, 4)
+shown$shapiro_p <- signif(results$shapiro_p, 3)
+print(shown, row.names = FALSE)
+```
+
+```{r}
+#| label: plots
+#| echo: true
+#| fig-width: 9
+#| fig-height: 4
+for (i in seq_along(sample_sizes)) {
+  plot_means(all_means[[i]], mu = pop_mean, sigma = pop_sd,
+             n = sample_sizes[i],
+             main = paste0(pop_name, ", n = ", sample_sizes[i]))
+}
+```
+
+## When it became normal
+
+When n is 30, the skewness is 0.183 and the excess kurtosis is -0.038, which means that the kurtosis is already acceptable, but the skewness is not. The skewness falls below 0.1 by the time n reaches 150, being 0.097 then rising slightly to 0.106 at n=200 before dropping again to 0.066 at n=300. The slight increase at n=200 appears to be due to simulation noise since, although the number of repetitions, B, is 10,000 which is large but still finite, it is not a true reversal because the kurtosis remains small and well-behaved over the entire range.
+
+::: {.callout-important}
+## Final answer
+For the **`r pop_name`** population, the sample means look
+approximately normal from **n = `r final_n`**.
+:::
+
+## Why I chose that value
+
+I arrived at n=150 since it is the first sample size at which the skewness, 0.097, falls below my plus or minus 0.1 limit, the excess kurtosis at the same time being both small and stable. The slight increase to 0.106 at n=200 does not in any way invalidate my choice of n=150; it is just the sort of small up-and-down variation one would anticipate from Monte Carlo estimation noise and not an indication that n=150 wasn't in fact sufficient. Shapiro-Wilk continues to reject the normality assumption even at n=150, the p-value being 3.60e-07, and this is again due to the same oversensitivity that applies to the other files.
+
+## What surprised me
+
+At n=200 the skewness was 0.106, which was a bit greater than the value of 0.097 observed at n=150, even though 200 is a larger sample size. I had expected the diagnostics to approach normality smoothly as n increased, but this indicates that with only B=10,000 repetitions there is still some random noise in the estimate itself, so the curve is not perfectly smooth. Moreover, unlike the Exponential distribution which required n=300, this population reached the threshold at n=150, even though its skewness at small n appeared just as severe, so it should be compared with that of the Exponential in the final summary document.
