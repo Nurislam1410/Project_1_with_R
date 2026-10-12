@@ -1,0 +1,109 @@
+---
+title: "CLT Simulation: Cauchy"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r}
+#| label: settings
+#| echo: true
+
+pop_name <- "Cauchy (standard)"
+
+rng <- function(n) rcauchy(n)
+
+# The Cauchy distribution's population mean and variance are undefined
+# (not just hard to estimate) -- so there is no finite target for the
+# sample mean to converge toward. NA is used here on purpose, not as
+# a placeholder to fill in later.
+pop_mean <- NA
+pop_sd   <- NA
+
+sample_sizes <- c(1, 5, 30, 100, 1000, 5000)
+B        <- 10000
+seed     <- 7828
+```
+
+```{r}
+#| label: load-functions
+#| echo: true
+source("clt_functions.R")
+```
+
+## What population
+
+The population studied here is **`r pop_name`**. Unlike every other
+population in this project, its true mean and standard deviation are not
+just "large" or "hard to estimate" -- they are mathematically **undefined**,
+because the tails are so heavy that the defining integral does not converge.
+
+The Cauchy distribution appears bell-shaped and symmetric about zero and at first glance is similar to the Standard Normal distribution, but its tails are considerably heavier and so extreme values are much more frequent than with a Normal distribution; since this is the case the mean and variance of its population are undefined, not merely difficult to calculate.
+
+## What I expected
+
+On this basis I thought that the sampling distribution of the mean would never become approximately normal, regardless of how large n became, since the Central Limit Theorem needs both a finite population mean and a finite variance in order to apply, and the Cauchy distribution has neither; I believed that increasing n would only make the situation worse or, at most, show no real improvement, unlike in the case of all the other populations in this project.
+
+## Which sample sizes and why
+
+The sample sizes tested were n = `r paste(sample_sizes, collapse = ", ")`,
+each with B = `r format(B, big.mark = ",")` repeats.
+
+I checked a very wide range, from n=1 to n=5000, going well beyond what was necessary for the other four populations, specifically in order to find out whether convergence just required a larger push or whether it actually never takes place regardless of how large n is.
+
+```{r}
+#| label: simulate
+#| echo: true
+all_means <- list()
+summary_rows <- list()
+for (i in seq_along(sample_sizes)) {
+  n <- sample_sizes[i]
+  set.seed(seed)
+  m <- simulate_means(rng, n = n, B = B)
+  all_means[[i]] <- m
+  summary_rows[[i]] <- summarize_means(m, mu = pop_mean, sigma = pop_sd, n = n)
+}
+```
+
+```{r}
+#| label: results-table
+#| echo: true
+results <- do.call(rbind, summary_rows)
+shown <- round(results, 4)
+shown$shapiro_p <- signif(results$shapiro_p, 3)
+print(shown, row.names = FALSE)
+```
+
+```{r}
+#| label: plots
+#| echo: true
+#| fig-width: 9
+#| fig-height: 4
+for (i in seq_along(sample_sizes)) {
+  plot_means(all_means[[i]], mu = pop_mean, sigma = pop_sd,
+             n = sample_sizes[i],
+             main = paste0(pop_name, ", n = ", sample_sizes[i]))
+}
+```
+
+## When it became normal
+
+It never did, no matter what the sample size was. When you take the average of the sample means it fluctuates without any discernible pattern, showing values of 2.04, 0.51, -1.54, 10.15, 1.99 and 2.48 for sample sizes from n=1 to n=5000, and it does not tend to stabilize as n increases. The variability of the sample means is extremely unstable and does not decrease as n grows, in fact it is greatest at n=100 and not at n=1. The skewness and excess kurtosis remain huge at all values of n, the excess kurtosis being in the thousands throughout, and the Shapiro-Wilk test rejects the idea that the data are normal at every single value of n, the p-values being approximately 1e-91 to 1e-95. There are no usual indications of convergence within this range.
+
+::: {.callout-important}
+## Final answer
+For the **`r pop_name`** population, **no finite sample size makes the
+sample means approximately normal.** The sampling distribution of the mean
+does not converge to normal as n increases, and this is not expected to
+change at any larger n.
+:::
+
+## Why I chose that value
+
+It is not a judgment made on the basis of thresholds as in the case of the other four files; rather, it is a direct consequence of the fact that the Cauchy population has neither a finite mean nor a finite variance. The Central Limit Theorem depends on both of these quantities existing, and since they do not, there is no reason to expect convergence for any value of n, and the simulation shows this: the instability in the sample means' spread and average does not decrease as n increases from 1 to 5000, which is the exact opposite of what the CLT predicts for all the other populations in this project.
+
+## What surprised me
+
+The thing that surprised me most was that the spread of the sample means was in fact greatest when n=100, at about 1215, rather than when n=1, at about 147. For all the other populations, more averaging always results in less spread. In this case, however, a single extreme value in a sample can cause that sample's mean to be dominated regardless of the sample size, so increasing n does not reliably reduce the spread at all and can in fact make a particular sample look worse.
