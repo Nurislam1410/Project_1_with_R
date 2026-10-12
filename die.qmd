@@ -1,0 +1,103 @@
+---
+title: "CLT Simulation: Six-Sided Die"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r}
+#| label: settings
+#| echo: true
+
+pop_name <- "Six-Sided Die (fair)"
+
+rng <- function(n) sample(1:6, size = n, replace = TRUE)
+
+pop_mean <- 3.5
+pop_sd   <- sqrt(35/12)
+
+sample_sizes <- c(1, 2, 5, 10, 30)
+B        <- 10000
+seed     <- 7828
+
+final_n  <- 10
+```
+
+```{r}
+#| label: load-functions
+#| echo: true
+source("clt_functions.R")
+```
+
+## What population
+
+The population studied here is **`r pop_name`**, with true mean
+`r pop_mean` and true standard deviation `r round(pop_sd, 4)`.
+
+SThe population may be regarded as equivalent to a six-sided die, meaning that each of the six possible outcomes (from 1 to 6) has an equal probability of 1/6. It is discrete and symmetric without any skew, because there is no reason to expect either high or low values to be more likely than the others.
+
+## What I expected
+
+Since the die population is already symmetric and not skewed at all, I thought that the sampling distribution of the mean would become normal very rapidly, more quickly than in the case of any skewed population, just as the Standard Normal distribution required essentially no averaging whatsoever. The main difficulty I anticipated would be due to the die's discreteness (with only a limited number of possible values for the sample mean when n is small) rather than the skew.
+
+## Which sample sizes and why
+
+The sample sizes tested were n = `r paste(sample_sizes, collapse = ", ")`,
+each with B = `r format(B, big.mark = ",")` repeats.
+
+I began with n=1, the sampling distribution in this case being nothing but the population itself, a uniform, discrete distribution spanning the numbers from 1 to 6, obviously not bell-shaped. I then increased n in small steps (to 2, 5, 10, and 30) and observed how quickly the symmetric but discrete population smoothed itself into a bell shape, expecting that this would occur long before n=30 since there was no skew to deal with.
+
+```{r}
+#| label: simulate
+#| echo: true
+all_means <- list()
+summary_rows <- list()
+for (i in seq_along(sample_sizes)) {
+  n <- sample_sizes[i]
+  set.seed(seed)
+  m <- simulate_means(rng, n = n, B = B)
+  all_means[[i]] <- m
+  summary_rows[[i]] <- summarize_means(m, mu = pop_mean, sigma = pop_sd, n = n)
+}
+```
+
+```{r}
+#| label: results-table
+#| echo: true
+results <- do.call(rbind, summary_rows)
+shown <- round(results, 4)
+shown$shapiro_p <- signif(results$shapiro_p, 3)
+print(shown, row.names = FALSE)
+```
+
+```{r}
+#| label: plots
+#| echo: true
+#| fig-width: 9
+#| fig-height: 4
+for (i in seq_along(sample_sizes)) {
+  plot_means(all_means[[i]], mu = pop_mean, sigma = pop_sd,
+             n = sample_sizes[i],
+             main = paste0(pop_name, ", n = ", sample_sizes[i]))
+}
+```
+
+## When it became normal
+
+When n is 1, the excess kurtosis is around -1.28, a value far from zero, something that is consistent with the flat, uniform appearance of a single die roll, even though the skewness is already very close to zero because the die is symmetric. As n increases, the excess kurtosis tends towards zero: it is -0.68 when n is 2, -0.26 when n is 5, and -0.06 when n is 10, a figure which is within my plus or minus 0.1 limit. The skewness remains negligible at all times, never going above about 0.02. At n=10, both the numbers and the shape of the histogram and Q-Q plot meet my criterion.
+
+::: {.callout-important}
+## Final answer
+For the **`r pop_name`** population, the sample means look
+approximately normal from **n = `r final_n`**.
+:::
+
+## Why I chose that value
+
+I used n=10 since it is the first sample size that I examined at which the excess kurtosis, -0.0625, comes within my plus or minus 0.1 limit, whereas the skewness had already been negligible at all the values of n that I tested because the die is symmetric and so there was never any skewness issue, only a problem with kurtosis and discreteness. With n=30 the kurtosis is -0.108, which is of roughly the same magnitude as it was at n=10 but on the opposite side of the threshold, so I don't regard that as indicating a true regression, merely as simulation noise with B=10,000 repetitions. The Shapiro-Wilk test rejects the idea that the data are normal at every value of n that was tested, including at n=30 where the p-value is as low as 2.44e-04, but I don't allow this to undermine my conclusion for the same reason given in the Standard Normal file: the test is extremely sensitive when B is this large, and in this case it is also picking up on the die's underlying discreteness, because the sample means of a die can only assume a finite number of exact values, not because of real non-normality.
+
+## What surprised me
+
+I had expected the die to behave like the Standard Normal distribution almost immediately since both distributions are symmetric, but in fact it wasn't until n=10 that the kurtosis came close to zero, because with small values of n there are only a few possible values for the sample mean, whereas the Standard Normal distribution never has such a situation since it is continuous. Thus symmetry by itself was not sufficient to ensure quick convergence and the discrete nature of the die also played a role.
