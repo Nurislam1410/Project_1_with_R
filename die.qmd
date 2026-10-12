@@ -36,7 +36,7 @@ source("clt_functions.R")
 The population studied here is **`r pop_name`**, with true mean
 `r pop_mean` and true standard deviation `r round(pop_sd, 4)`.
 
-SThe population may be regarded as equivalent to a six-sided die, meaning that each of the six possible outcomes (from 1 to 6) has an equal probability of 1/6. It is discrete and symmetric without any skew, because there is no reason to expect either high or low values to be more likely than the others.
+The population may be regarded as equivalent to a six-sided die, meaning that each of the six possible outcomes (from 1 to 6) has an equal probability of 1/6. It is discrete and symmetric without any skew, because there is no reason to expect either high or low values to be more likely than the others.
 
 ## What I expected
 
