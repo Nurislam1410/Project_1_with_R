@@ -1,0 +1,103 @@
+---
+title: "CLT Simulation: Exponential"
+author: "Nurislam"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r}
+#| label: settings
+#| echo: true
+
+pop_name <- "Exponential (rate = 1)"
+
+rng <- function(n) rexp(n, rate = 1)
+
+pop_mean <- 1
+pop_sd   <- 1
+
+sample_sizes <- c(2, 5, 10, 30, 50, 100, 150, 200, 300)
+B        <- 10000
+seed     <- 7828
+
+final_n  <- 300
+```
+
+```{r}
+#| label: load-functions
+#| echo: true
+source("clt_functions.R")
+```
+
+## What population
+
+The population studied here is **`r pop_name`**, with true mean
+`r pop_mean` and true standard deviation `r round(pop_sd, 4)`.
+
+The population with an exponential rate of 1 is continuous, always positive, and strongly right-skewed since most of the values are small but there is a long tail of large values. This is quite different from both the Standard Normal and the die populations, which are symmetric.
+
+## What I expected
+
+Due to the skewness, I figured that the sample means would require a larger sample size than was the case with the die or the Standard Normal distribution, which is why I thought of the usual rule of thumb that n equals 30, so I expected something in that range, perhaps a bit higher because of the heavy right tail.
+
+## Which sample sizes and why
+
+The sample sizes tested were n = `r paste(sample_sizes, collapse = ", ")`,
+each with B = `r format(B, big.mark = ",")` repeats.
+
+To begin with I used small values of n (2, 5, 10) in order to clearly see the skewed, non-normal shape, I included n=30 to test the textbook rule of thumb directly, and then continued increasing the value of n up to 50, 100, 150, 200, and 300 since the skewness was still well above my threshold both at n=30 and at n=100, so I kept going until it finally fell below 0.1.
+
+```{r}
+#| label: simulate
+#| echo: true
+all_means <- list()
+summary_rows <- list()
+for (i in seq_along(sample_sizes)) {
+  n <- sample_sizes[i]
+  set.seed(seed)
+  m <- simulate_means(rng, n = n, B = B)
+  all_means[[i]] <- m
+  summary_rows[[i]] <- summarize_means(m, mu = pop_mean, sigma = pop_sd, n = n)
+}
+```
+
+```{r}
+#| label: results-table
+#| echo: true
+results <- do.call(rbind, summary_rows)
+shown <- round(results, 4)
+shown$shapiro_p <- signif(results$shapiro_p, 3)
+print(shown, row.names = FALSE)
+```
+
+```{r}
+#| label: plots
+#| echo: true
+#| fig-width: 9
+#| fig-height: 4
+for (i in seq_along(sample_sizes)) {
+  plot_means(all_means[[i]], mu = pop_mean, sigma = pop_sd,
+             n = sample_sizes[i],
+             main = paste0(pop_name, ", n = ", sample_sizes[i]))
+}
+```
+
+## When it became normal
+
+When the sample size is 30, the skewness is still 0.373 and the excess kurtosis is 0.124, both of which are clearly beyond my plus or minus 0.1 limit, so the textbook rule that n equals 30 is not valid in this case. At n=100 the skewness is 0.225, which is still too high. The kurtosis reaches near zero by about n=50, amounting to 0.031 and then remains at that value, but the skewness decreases much more slowly: it is not until n=300 that it drops below 0.1, reaching 0.092 after having been 0.173 at n=150 and 0.148 at n=200.
+
+::: {.callout-important}
+## Final answer
+For the **`r pop_name`** population, the sample means look
+approximately normal from **n = `r final_n`**.
+:::
+
+## Why I chose that value
+
+I used n=300 since it is the first sample size at which both the skewness, 0.092, and the excess kurtosis, -0.032, are within plus or minus 0.1 of zero simultaneously. In this case, it was skewness and not kurtosis that posed the problem, as kurtosis had already reached near zero by the time n was 50, whereas skewness remained above 0.1 right up to n=200. This indicates that for a skewed population the right-hand tail continues to affect the shape long after the peakedness has become normal-looking, which is why it was important to examine skewness and kurtosis separately. The Shapiro-Wilk test still rejects the null hypothesis even at n=300, the p-value being 1.22e-03, and I believe this is due to the same excessive sensitivity to large B values that was mentioned in the Standard Normal file, not because of true non-normality, since all the other measures show that the distribution is now approximately normal.
+
+## What surprised me
+
+It came as a surprise to me that the rule stating that n equals 30 fails so obviously in this case, since at n=30 the skewness of 0.373 was well above my threshold. It wasn't until the sample size had been increased to n=300 that the skewness actually fell below 0.1. This leads me to question whether there is indeed a single universal n equals 30 rule that applies to all populations, since it appears to depend greatly on the degree of skewness in the original population.
